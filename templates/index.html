@@ -8,73 +8,80 @@
 </head>
 <body class="bg-light">
 
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">🎓 GPA Calculator</h1>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">🎓 GPA Calculator</h1>
 
-        <!-- ✅ Student Info Form -->
-        <div class="card p-3 mb-3">
-            <h4>👨‍🎓 Student Info</h4>
-            <form method="POST" action="/save_student">
-                <div class="row mb-2">
-                    <div class="col">
-                        <label>Student Name</label>
-                        <input type="text" class="form-control" name="student_name" placeholder="Enter name" required>
-                    </div>
-                    <div class="col">
-                        <label>Student ID</label>
-                        <input type="text" class="form-control" name="student_id" placeholder="Enter ID" required>
-                    </div>
+    <!-- ✅ Student Info Form -->
+    <div class="card p-3 mb-3">
+        <h4>👨‍🎓 Student Info</h4>
+        <form method="POST" action="/save_student">
+            <div class="row mb-2">
+                <div class="col">
+                    <label>Student Name</label>
+                    <input type="text" class="form-control" name="student_name" placeholder="Enter name" required>
                 </div>
-                <button type="submit" class="btn btn-success w-100">✅ Save Info</button>
-            </form>
-        </div>
-
-        <!-- ✅ Add Subject Form -->
-        <div class="card p-3 mb-3">
-            <h4>📚 Add Subject</h4>
-            <form method="POST" action="/add_subject">
-                <div class="row mb-2">
-                    <div class="col">
-                        <label>Subject Name</label>
-                        <input type="text" class="form-control" name="subject_name" placeholder="e.g. Math" required>
-                    </div>
-                    <div class="col">
-                        <label>Grade (0-100)</label>
-                        <input type="number" class="form-control" name="subject_grade" placeholder="e.g. 95" required>
-                    </div>
+                <div class="col">
+                    <label>Student ID</label>
+                    <input type="text" class="form-control" name="student_id" placeholder="Enter ID" required>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">➕ Add Subject</button>
-            </form>
-        </div>
+            </div>
+            <button type="submit" class="btn btn-success w-100">✅ Save Info</button>
+        </form>
 
-        <!-- ✅ Subjects List -->
-        <div class="card p-3 mb-3">
-            <h4>📄 Subjects Added</h4>
-            {% if subjects %}
-                <ul class="list-group">
-                    {% for subject in subjects %}
-                    <li class="list-group-item d-flex justify-content-between">
-                        {{ subject.name }} - {{ subject.grade }}
-                        <form method="POST" action="/delete_subject/{{ loop.index0 }}">
-                            <button class="btn btn-danger btn-sm">🗑 Delete</button>
-                        </form>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No subjects added yet.</p>
-            {% endif %}
+        <!-- ✅ نعرض البيانات إذا تم حفظها -->
+        {% if student_name and student_id %}
+        <div class="alert alert-info mt-3">
+            ✅ <strong>Saved!</strong> Student: <b>{{ student_name }}</b> | ID: <b>{{ student_id }}</b>
         </div>
-
-        <!-- ✅ GPA & PDF Buttons -->
-        <div class="text-center">
-            <form method="POST" action="/calculate_gpa" style="display:inline;">
-                <button class="btn btn-info">📊 Calculate GPA</button>
-            </form>
-            <a href="/print_pdf" class="btn btn-secondary">🖨 Print PDF</a>
-        </div>
-
+        {% endif %}
     </div>
+
+    <!-- ✅ Add Subject Form -->
+    <div class="card p-3 mb-3">
+        <h4>📚 Add Subject</h4>
+        <form method="POST" action="/add_subject">
+            <div class="row mb-2">
+                <div class="col">
+                    <label>Subject Name</label>
+                    <input type="text" class="form-control" name="subject_name" placeholder="e.g. Math" required>
+                </div>
+                <div class="col">
+                    <label>Grade (0-100)</label>
+                    <input type="number" class="form-control" name="subject_grade" placeholder="e.g. 95" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">➕ Add Subject</button>
+        </form>
+    </div>
+
+    <!-- ✅ Subjects List -->
+    <div class="card p-3 mb-3">
+        <h4>📄 Subjects Added</h4>
+        {% if subjects %}
+            <ul class="list-group">
+                {% for subject in subjects %}
+                <li class="list-group-item d-flex justify-content-between">
+                    {{ subject.name }} - {{ subject.grade }}
+                    <form method="POST" action="/delete_subject/{{ loop.index0 }}">
+                        <button class="btn btn-danger btn-sm">🗑 Delete</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No subjects added yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- ✅ GPA & PDF Buttons -->
+    <div class="text-center">
+        <form method="POST" action="/calculate_gpa" style="display:inline;">
+            <button class="btn btn-info">📊 Calculate GPA</button>
+        </form>
+        <a href="/print_pdf" class="btn btn-secondary">🖨 Print PDF</a>
+    </div>
+
+</div>
 
 </body>
 </html>
