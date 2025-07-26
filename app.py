@@ -1,67 +1,83 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, Response
 from weasyprint import HTML
-import os
+from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "supersecretkey"
 
-# 📌 بيانات مؤقتة في الذاكرة (بدل قاعدة البيانات حالياً)
-student_info = {"name": "", "id": ""}
-subjects = []
-
-@app.route("/", methods=["GET"])
+@app.route('/')
 def index():
-    return render_template("index.html", student=student_info, subjects=subjects)
+    return render_template(
+        'index.html',
+        subjects=session.get('subjects', []),
+        student_name=session.get('student_name'),
+        student_id=session.get('student_id')
+    )
 
-# ✅ حفظ بيانات الطالب
-@app.route("/save_student", methods=["POST"])
-def save_student():
-    name = request.form.get("student_name")
-    student_id = request.form.get("student_id")
-
-    if not name or not student_id:
-        return "❌ Missing name or ID", 400  # Bad Request إذا لم يرسل الحقول
-
-    student_info["name"] = name
-    student_info["id"] = student_id
-
-    return redirect(url_for("index"))
-
-# ✅ إضافة مادة
-@app.route("/add_subject", methods=["POST"])
+@app.route('/add_subject', methods=['POST'])
 def add_subject():
-    subject_name = request.form.get("subject_name")
-    grade = request.form.get("subject_grade")
+    subject = request.form.get('subject')
+    grade = request.form.get('grade')
 
-    if not subject_name or not grade:
-        return "❌ Missing subject name or grade", 400
+    if subject and grade:
+        subjects = session.get('subjects', [])
+        subjects.append({'subject': subject, 'grade': grade})
+        session['subjects'] = subjects
 
-    subjects.append({"name": subject_name, "grade": float(grade)})
-    return redirect(url_for("index"))
+    return redirect(url_for('index'))
 
-# ✅ حذف مادة
-@app.route("/delete_subject/<int:index>", methods=["POST"])
+@app.route('/delete_subject/<int:index>')
 def delete_subject(index):
+    subjects = session.get('subjects', [])
     if 0 <= index < len(subjects):
         subjects.pop(index)
-    return redirect(url_for("index"))
+        session['subjects'] = subjects
+    return redirect(url_for('index'))
 
-# ✅ حساب GPA
-@app.route("/calculate_gpa", methods=["POST"])
+@app.route('/save_info', methods=['POST'])
+def save_info():
+    session['student_name'] = request.form.get('student_name')
+    session['student_id'] = request.form.get('student_id')
+    return redirect(url_for('index'))
+
+@app.route('/calculate_gpa')
 def calculate_gpa():
-    if not subjects:
-        return "❌ No subjects to calculate GPA", 400
+    subjects = session.get('subjects', [])
+    if subjects:
+        total = sum(float(sub['grade']) for sub in subjects)
+        gpa = round(total / len(subjects), 2)
+    else:
+        gpa = 0
+    return str(gpa)
 
-    total = sum(sub["grade"] for sub in subjects)
-    gpa = round(total / len(subjects), 2)
-    return f"<h1>📊 Final GPA: {gpa}</h1>"
-
-# ✅ توليد PDF
-@app.route("/print_pdf", methods=["GET"])
+@app.route('/print_pdf')
 def print_pdf():
-    html = render_template("report.html", student=student_info, subjects=subjects)
-    pdf_file = "report.pdf"
-    HTML(string=html).write_pdf(pdf_file)
-    return send_file(pdf_file, as_attachment=True)
+    subjects = session.get('subjects', [])
+    student_name = session.get('student_name', '')
+    student_id = session.get('student_id', '')
+
+    # ✅ حساب المعدل
+    if subjects:
+        total = sum(float(sub['grade']) for sub in subjects)
+        gpa = round(total / len(subjects), 2)
+    else:
+        gpa = 0
+
+    # ✅ إضافة التاريخ
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
+    rendered = render_template(
+        'report.html',
+        subjects=subjects,
+        student_name=student_name,
+        student_id=student_id,
+        gpa=gpa,
+        current_date=current_date
+    )
+
+    pdf = HTML(string=rendered).write_pdf()
+    return Response(pdf, mimetype='application/pdf')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
