@@ -3,104 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <title>تقرير المعدل التراكمي</title>
-
     <style>
         @font-face {
-            font-family: 'Amiri';
-            src: url('static/fonts/Amiri-Regular.ttf') format('truetype');
-        }
+    font-family: 'Amiri';
+    src: url('static/fonts/Amiri-Regular.ttf');
+}
 
-        body { 
-            font-family: 'Amiri', sans-serif;
-            margin: 40px;
-            background-color: #fdfdfd;
+
+        body {
+            font-family: 'Amiri', serif;
             direction: rtl;
             text-align: right;
-            line-height: 1.8;
+            margin: 40px;
+            background-color: #fff;
         }
-
-        .header {
+        h1 {
             text-align: center;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
             color: #2c3e50;
-            font-size: 28px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
         }
-
-        .student-info {
-            margin-bottom: 20px;
+        p {
             font-size: 18px;
+            margin: 8px 0;
         }
-
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 20px; 
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: center; 
+        table, th, td {
+            border: 1px solid #2c3e50;
         }
-
-        th { 
-            background-color: #2c3e50; 
-            color: #fff;
-            font-size: 16px;
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-size: 18px;
+            padding: 10px;
         }
-
         td {
-            font-size: 15px;
+            font-size: 16px;
+            padding: 8px;
+            text-align: center;
         }
-
         .footer {
             margin-top: 30px;
-            font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             text-align: left;
-            border-top: 2px solid #2c3e50;
-            padding-top: 10px;
         }
     </style>
 </head>
 <body>
+    <h1>📄 تقرير المعدل التراكمي</h1>
 
-    <!-- ✅ الهيدر -->
-    <div class="header">
-        <h1>🎓 تقرير المعدل التراكمي</h1>
-    </div>
+    <p><strong>👨‍🎓 الطالب:</strong> {{ student_name }}</p>
+    <p><strong>🆔 الرقم الجامعي:</strong> {{ student_id }}</p>
 
-    <!-- ✅ بيانات الطالب -->
-    <div class="student-info">
-        <p><strong>الطالب:</strong> {{ student_name }}</p>
-        <p><strong>الرقم الجامعي:</strong> {{ student_id }}</p>
-    </div>
-
-    <!-- ✅ الجدول -->
     <table>
         <tr>
             <th>المادة</th>
-            <th>الدرجة</th>
+            <th>العلامة</th>
         </tr>
-        {% for subject in subjects %}
+        {% for sub in subjects %}
         <tr>
-            <td>{{ subject.name }}</td>
-            <td>{{ subject.grade }}</td>
+            <td>{{ sub.name }}</td>
+            <td>{{ sub.grade }}</td>
         </tr>
         {% endfor %}
     </table>
 
-    <!-- ✅ الفوتر -->
     <div class="footer">
-        🎯 <strong>المعدل النهائي:</strong> {{ gpa }}
-        <br>
-        📅 <em>تم إنشاء التقرير بتاريخ {{ date }}</em>
+        <p><strong>📊 المعدل التراكمي:</strong> {{ gpa|round(2) }}</p>
+        <p><strong>📅 التاريخ:</strong> {{ today }}</p>
     </div>
-
 </body>
 </html>
