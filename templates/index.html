@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPA Calculator</title>
+</head>
+<body>
+    <h1>🎓 GPA Calculator</h1>
+
+    <!-- ✅ إدخال بيانات الطالب -->
+    <form method="POST" action="/set_student">
+        <label>Student Name:</label>
+        <input type="text" name="student_name" required>
+        <label>Student ID:</label>
+        <input type="text" name="student_id" required>
+        <button type="submit">✅ Save Student Info</button>
+    </form>
+
+    {% if student_name %}
+        <h3>👤 Student: {{ student_name }} (ID: {{ student_id }})</h3>
+    {% endif %}
+
+    <hr>
+
+    <!-- ✅ إدخال المواد -->
+    <form method="POST" action="/add">
+        <label>Subject Name:</label>
+        <input type="text" name="subject" required>
+        <label>Grade (from 100):</label>
+        <input type="number" name="grade" required>
+        <button type="submit">➕ Add Subject</button>
+    </form>
+
+    <h2>📋 Subjects Added:</h2>
+    <ul>
+        {% for subject in subjects %}
+            <li>
+                {{ subject.name }} - {{ subject.grade }}
+
+                <!-- ✅ زر الحذف -->
+                <form method="POST" action="/delete/{{ loop.index0 }}" style="display:inline;">
+                    <button type="submit">🗑 Delete</button>
+                </form>
+
+                <!-- ✅ زر التعديل -->
+                <form method="GET" action="/edit/{{ loop.index0 }}" style="display:inline;">
+                    <button type="submit">✏ Edit</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <!-- ✅ زر حساب المعدل -->
+    <form method="GET" action="/calculate">
+        <button type="submit">📊 Calculate GPA</button>
+    </form>
+
+    {% if gpa %}
+        <h2>🎯 GPA: {{ gpa }}</h2>
+    {% endif %}
+
+    <!-- ✅ زر طباعة PDF -->
+    <form method="GET" action="/print_pdf">
+        <button type="submit">📄 Print PDF</button>
+    </form>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Subject</title>
+</head>
+<body>
+    <h1>✏ Edit Subject</h1>
+
+    <form method="POST">
+        <label>Subject Name:</label>
+        <input type="text" name="subject" value="{{ subject.name }}" required>
+        <label>Grade:</label>
+        <input type="number" name="grade" value="{{ subject.grade }}" required>
+        <button type="submit">💾 Save</button>
+    </form>
+
+    <br>
+    <a href="/">⬅ Back</a>
+</body>
+</html>
