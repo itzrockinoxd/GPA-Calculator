@@ -1,59 +1,67 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file
 from weasyprint import HTML
-import io
-import datetime
+import os
 
 app = Flask(__name__)
 
-# بيانات مؤقتة في الذاكرة (لتجربة فقط)
+# 📌 بيانات مؤقتة في الذاكرة (بدل قاعدة البيانات حالياً)
 student_info = {"name": "", "id": ""}
 subjects = []
 
-@app.route('/')
+@app.route("/", methods=["GET"])
 def index():
-    return render_template('index.html', student=student_info, subjects=subjects)
+    return render_template("index.html", student=student_info, subjects=subjects)
 
-@app.route('/save_student', methods=['POST'])
+# ✅ حفظ بيانات الطالب
+@app.route("/save_student", methods=["POST"])
 def save_student():
-    student_info['name'] = request.form['student_name']
-    student_info['id'] = request.form['student_id']
-    return redirect(url_for('index'))
+    name = request.form.get("student_name")
+    student_id = request.form.get("student_id")
 
-@app.route('/add_subject', methods=['POST'])
+    if not name or not student_id:
+        return "❌ Missing name or ID", 400  # Bad Request إذا لم يرسل الحقول
+
+    student_info["name"] = name
+    student_info["id"] = student_id
+
+    return redirect(url_for("index"))
+
+# ✅ إضافة مادة
+@app.route("/add_subject", methods=["POST"])
 def add_subject():
-    name = request.form['subject_name']
-    grade = float(request.form['grade'])
-    subjects.append({'name': name, 'grade': grade})
-    return redirect(url_for('index'))
+    subject_name = request.form.get("subject_name")
+    grade = request.form.get("subject_grade")
 
-@app.route('/delete_subject/<int:index>', methods=['POST'])
+    if not subject_name or not grade:
+        return "❌ Missing subject name or grade", 400
+
+    subjects.append({"name": subject_name, "grade": float(grade)})
+    return redirect(url_for("index"))
+
+# ✅ حذف مادة
+@app.route("/delete_subject/<int:index>", methods=["POST"])
 def delete_subject(index):
     if 0 <= index < len(subjects):
         subjects.pop(index)
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
 
-@app.route('/calculate_gpa')
+# ✅ حساب GPA
+@app.route("/calculate_gpa", methods=["POST"])
 def calculate_gpa():
     if not subjects:
-        return redirect(url_for('index'))
-    gpa = sum(sub['grade'] for sub in subjects) / len(subjects)
-    return render_template('index.html', student=student_info, subjects=subjects, gpa=round(gpa, 2))
+        return "❌ No subjects to calculate GPA", 400
 
-@app.route('/print_pdf')
+    total = sum(sub["grade"] for sub in subjects)
+    gpa = round(total / len(subjects), 2)
+    return f"<h1>📊 Final GPA: {gpa}</h1>"
+
+# ✅ توليد PDF
+@app.route("/print_pdf", methods=["GET"])
 def print_pdf():
-    # نحسب المعدل التراكمي
-    gpa = 0
-    if subjects:
-        gpa = sum(sub['grade'] for sub in subjects) / len(subjects)
+    html = render_template("report.html", student=student_info, subjects=subjects)
+    pdf_file = "report.pdf"
+    HTML(string=html).write_pdf(pdf_file)
+    return send_file(pdf_file, as_attachment=True)
 
-    # نجهز HTML للطباعة
-    rendered = render_template('report.html', student=student_info, subjects=subjects, gpa=round(gpa, 2), date=datetime.date.today())
-
-    # نحول HTML إلى PDF مع base_url لقراءة static files
-    pdf = HTML(string=rendered, base_url=request.root_path).write_pdf()
-
-    # نرسل الملف PDF للمستخدم
-    return send_file(io.BytesIO(pdf), download_name="gpa_report.pdf", as_attachment=False)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
