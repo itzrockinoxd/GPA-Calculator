@@ -1,79 +1,79 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response
-import pdfkit
+from flask import Flask, render_template, request, redirect, url_for, send_file
+from io import BytesIO
+from weasyprint import HTML, CSS
+from datetime import datetime
+import os
 
 app = Flask(__name__)
 
-# ✅ متغيرات لتخزين بيانات الطالب والمواد
+# ✅ بيانات افتراضية
 subjects = []
 student_name = ""
 student_id = ""
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html', subjects=subjects, student_name=student_name, student_id=student_id)
+    return render_template("index.html", subjects=subjects, student_name=student_name, student_id=student_id)
 
-# ✅ حفظ بيانات الطالب
-@app.route('/set_student', methods=['POST'])
+@app.route("/set_student", methods=["POST"])
 def set_student():
     global student_name, student_id
-    student_name = request.form['student_name']
-    student_id = request.form['student_id']
-    return redirect(url_for('index'))
+    student_name = request.form.get("student_name")
+    student_id = request.form.get("student_id")
+    return redirect(url_for("index"))
 
-# ✅ إضافة مادة
-@app.route('/add', methods=['POST'])
+@app.route("/add", methods=["POST"])
 def add_subject():
-    subject_name = request.form['subject']
-    grade = float(request.form['grade'])
-    subjects.append({'name': subject_name, 'grade': grade})
-    return redirect(url_for('index'))
+    subject_name = request.form.get("subject")
+    grade = float(request.form.get("grade"))
+    subjects.append({"name": subject_name, "grade": grade})
+    return redirect(url_for("index"))
 
-# ✅ حساب المعدل
-@app.route('/calculate', methods=['GET'])
-def calculate_gpa():
+@app.route("/delete/<int:index>", methods=["POST"])
+def delete_subject(index):
+    subjects.pop(index)
+    return redirect(url_for("index"))
+
+@app.route("/edit/<int:index>", methods=["GET", "POST"])
+def edit_subject(index):
+    if request.method == "POST":
+        subjects[index]["name"] = request.form.get("subject")
+        subjects[index]["grade"] = float(request.form.get("grade"))
+        return redirect(url_for("index"))
+    return render_template("edit.html", subject=subjects[index])
+
+@app.route("/calculate")
+def calculate():
     if len(subjects) == 0:
         gpa = 0
     else:
-        total = sum(sub['grade'] for sub in subjects)
-        gpa = round(total / len(subjects), 2)
-    return render_template('index.html', subjects=subjects, student_name=student_name, student_id=student_id, gpa=gpa)
+        gpa = sum([sub["grade"] for sub in subjects]) / len(subjects)
+    return render_template("index.html", subjects=subjects, student_name=student_name, student_id=student_id, gpa=gpa)
 
-# ✅ حذف مادة
-@app.route('/delete/<int:index>', methods=['POST'])
-def delete_subject(index):
-    if 0 <= index < len(subjects):
-        subjects.pop(index)
-    return redirect(url_for('index'))
-
-# ✅ تعديل مادة (فتح صفحة التعديل وحفظها)
-@app.route('/edit/<int:index>', methods=['GET', 'POST'])
-def edit_subject(index):
-    if request.method == 'POST':
-        subjects[index]['name'] = request.form['subject']
-        subjects[index]['grade'] = float(request.form['grade'])
-        return redirect(url_for('index'))
-    return render_template('edit.html', subject=subjects[index], index=index)
-
-# ✅ طباعة PDF
-@app.route('/print_pdf')
+@app.route("/print_pdf")
 def print_pdf():
-    rendered = render_template(
-        'report.html',
-        subjects=subjects,
-        student_name=student_name,
-        student_id=student_id,
-        gpa=round(sum(sub['grade'] for sub in subjects) / len(subjects), 2) if subjects else 0
-    )
+    if len(subjects) == 0:
+        gpa = 0
+    else:
+        gpa = sum([sub["grade"] for sub in subjects]) / len(subjects)
 
-    # ⚠️ عدل هذا المسار حسب مكان تثبيت wkhtmltopdf في جهازك
-    config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+    # ✅ تجهيز البيانات والتاريخ
+    current_date = datetime.now().strftime("%Y-%m-%d")
 
-    pdf = pdfkit.from_string(rendered, False, configuration=config)
+    # ✅ توليد HTML من القالب
+    rendered_html = render_template("report.html", 
+                                    subjects=subjects, 
+                                    student_name=student_name, 
+                                    student_id=student_id, 
+                                    gpa=gpa, 
+                                    date=current_date)
 
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=GPA_Report.pdf'
-    return response
+    # ✅ إنشاء PDF باستخدام WeasyPrint
+    pdf_file = BytesIO()
+    HTML(string=rendered_html, base_url=os.getcwd()).write_pdf(pdf_file)
+    pdf_file.seek(0)
 
-if __name__ == '__main__':
+    return send_file(pdf_file, mimetype='application/pdf', download_name='GPA_Report.pdf')
+
+if __name__ == "__main__":
     app.run(debug=True)

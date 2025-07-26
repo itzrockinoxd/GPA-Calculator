@@ -1,26 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>GPA Report</title>
+    <title>تقرير المعدل التراكمي</title>
+
     <style>
-        body { font-family: Arial, sans-serif; margin: 30px; }
-        h1 { color: #2c3e50; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-        th { background-color: #f4f4f4; }
-        .footer { margin-top: 30px; font-weight: bold; }
+        @font-face {
+            font-family: 'Amiri';
+            src: url('static/fonts/Amiri-Regular.ttf') format('truetype');
+        }
+
+        body { 
+            font-family: 'Amiri', sans-serif;
+            margin: 40px;
+            background-color: #fdfdfd;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.8;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+
+        .student-info {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+
+        th { 
+            background-color: #2c3e50; 
+            color: #fff;
+            font-size: 16px;
+        }
+
+        td {
+            font-size: 15px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: left;
+            border-top: 2px solid #2c3e50;
+            padding-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>🎓 GPA Report</h1>
-    <p><strong>Student:</strong> {{ student_name }}</p>
-    <p><strong>ID:</strong> {{ student_id }}</p>
 
+    <!-- ✅ الهيدر -->
+    <div class="header">
+        <h1>🎓 تقرير المعدل التراكمي</h1>
+    </div>
+
+    <!-- ✅ بيانات الطالب -->
+    <div class="student-info">
+        <p><strong>الطالب:</strong> {{ student_name }}</p>
+        <p><strong>الرقم الجامعي:</strong> {{ student_id }}</p>
+    </div>
+
+    <!-- ✅ الجدول -->
     <table>
         <tr>
-            <th>Subject</th>
-            <th>Grade</th>
+            <th>المادة</th>
+            <th>الدرجة</th>
         </tr>
         {% for subject in subjects %}
         <tr>
@@ -30,8 +95,12 @@
         {% endfor %}
     </table>
 
+    <!-- ✅ الفوتر -->
     <div class="footer">
-        🎯 <strong>Final GPA:</strong> {{ gpa }}
+        🎯 <strong>المعدل النهائي:</strong> {{ gpa }}
+        <br>
+        📅 <em>تم إنشاء التقرير بتاريخ {{ date }}</em>
     </div>
+
 </body>
 </html>
