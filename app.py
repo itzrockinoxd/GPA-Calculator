@@ -1,68 +1,59 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-from xhtml2pdf import pisa
+from flask import Flask, render_template, request, redirect, url_for, send_file
+from weasyprint import HTML
 import io
-from datetime import datetime
+import datetime
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # ضروري لاستخدام session
 
+# بيانات مؤقتة في الذاكرة (لتجربة فقط)
+student_info = {"name": "", "id": ""}
 subjects = []
 
-@app.route("/", methods=["GET", "POST"])
+@app.route('/')
 def index():
-    if request.method == "POST":
-        # جلب اسم الطالب ورقم الجلوس من الفورم
-        student_name = request.form.get("student_name")
-        student_id = request.form.get("student_id")
-        
-        # حفظ البيانات في session
-        session["student_name"] = student_name
-        session["student_id"] = student_id
-        
-        return redirect(url_for("index"))
+    return render_template('index.html', student=student_info, subjects=subjects)
 
-    return render_template("index.html", 
-                           student_name=session.get("student_name", ""),
-                           student_id=session.get("student_id", ""),
-                           subjects=subjects)
+@app.route('/save_student', methods=['POST'])
+def save_student():
+    student_info['name'] = request.form['student_name']
+    student_info['id'] = request.form['student_id']
+    return redirect(url_for('index'))
 
-@app.route("/add_subject", methods=["POST"])
+@app.route('/add_subject', methods=['POST'])
 def add_subject():
-    subject_name = request.form.get("subject_name")
-    grade = float(request.form.get("grade"))
-    subjects.append({"name": subject_name, "grade": grade})
-    return redirect(url_for("index"))
+    name = request.form['subject_name']
+    grade = float(request.form['grade'])
+    subjects.append({'name': name, 'grade': grade})
+    return redirect(url_for('index'))
 
-@app.route("/delete_subject/<int:index>", methods=["POST"])
+@app.route('/delete_subject/<int:index>', methods=['POST'])
 def delete_subject(index):
     if 0 <= index < len(subjects):
         subjects.pop(index)
-    return redirect(url_for("index"))
+    return redirect(url_for('index'))
 
-@app.route("/print_pdf")
+@app.route('/calculate_gpa')
+def calculate_gpa():
+    if not subjects:
+        return redirect(url_for('index'))
+    gpa = sum(sub['grade'] for sub in subjects) / len(subjects)
+    return render_template('index.html', student=student_info, subjects=subjects, gpa=round(gpa, 2))
+
+@app.route('/print_pdf')
 def print_pdf():
-    # تجهيز بيانات التقرير
-    student_name = session.get("student_name", "Unknown")
-    student_id = session.get("student_id", "Unknown")
-    gpa = round(sum([s['grade'] for s in subjects]) / len(subjects), 2) if subjects else 0
+    # نحسب المعدل التراكمي
+    gpa = 0
+    if subjects:
+        gpa = sum(sub['grade'] for sub in subjects) / len(subjects)
 
-    rendered = render_template("report.html", 
-                               student_name=student_name, 
-                               student_id=student_id, 
-                               subjects=subjects, 
-                               gpa=gpa,
-                               date=datetime.today().strftime('%Y-%m-%d'))
+    # نجهز HTML للطباعة
+    rendered = render_template('report.html', student=student_info, subjects=subjects, gpa=round(gpa, 2), date=datetime.date.today())
 
-    pdf = io.BytesIO()
-    pisa_status = pisa.CreatePDF(io.StringIO(rendered), dest=pdf)
-    if pisa_status.err:
-        return "Error generating PDF", 500
+    # نحول HTML إلى PDF مع base_url لقراءة static files
+    pdf = HTML(string=rendered, base_url=request.root_path).write_pdf()
 
-    pdf.seek(0)
-    return pdf.getvalue(), 200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename=report.pdf'
-    }
+    # نرسل الملف PDF للمستخدم
+    return send_file(io.BytesIO(pdf), download_name="gpa_report.pdf", as_attachment=False)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
