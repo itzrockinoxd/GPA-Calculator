@@ -1,95 +1,88 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file
+import os
 from xhtml2pdf import pisa
-from io import BytesIO
-from datetime import datetime
 
 app = Flask(__name__)
 
-# -------- Temporary Data Storage --------
+# ================== بيانات الطلاب ==================
 student_info = {"name": "", "id": ""}
-subjects = []  # Each subject will be stored as {"name": "Math", "grade": 95}
+subjects = []
 
+# ================ المسار الأساسي ====================
+basedir = os.path.abspath(os.path.dirname(__file__))
 
-# -------- Home Route --------
-@app.route('/')
+# ================== الصفحات ==================
+@app.route("/")
 def index():
-    return render_template('index.html', student=student_info, subjects=subjects)
+    return render_template("index.html", student=student_info, subjects=subjects)
 
-
-# -------- Save Student Info --------
-@app.route('/save_student', methods=['POST'])
+# ============= حفظ معلومات الطالب =============
+@app.route("/save_student", methods=["POST"])
 def save_student():
     student_info["name"] = request.form.get("student_name")
     student_info["id"] = request.form.get("student_id")
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
 
-
-# -------- Add Subject --------
-@app.route('/add_subject', methods=['POST'])
+# ============= إضافة مادة =============
+@app.route("/add_subject", methods=["POST"])
 def add_subject():
     subject_name = request.form.get("subject_name")
     grade = request.form.get("grade")
 
     if subject_name and grade:
         subjects.append({"name": subject_name, "grade": float(grade)})
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
 
-
-# -------- Delete Subject --------
-@app.route('/delete_subject/<int:index>')
+# ============= حذف مادة =============
+@app.route("/delete_subject/<int:index>", methods=["POST"])
 def delete_subject(index):
     if 0 <= index < len(subjects):
         subjects.pop(index)
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
 
-
-# -------- Edit Subject (optional future feature) --------
-@app.route('/edit_subject/<int:index>', methods=['POST'])
+# ============= تعديل مادة =============
+@app.route("/edit_subject/<int:index>", methods=["POST"])
 def edit_subject(index):
     if 0 <= index < len(subjects):
-        subjects[index]["name"] = request.form.get("subject_name")
-        subjects[index]["grade"] = float(request.form.get("grade"))
-    return redirect(url_for('index'))
+        new_name = request.form.get("new_name")
+        new_grade = request.form.get("new_grade")
+        if new_name:
+            subjects[index]["name"] = new_name
+        if new_grade:
+            subjects[index]["grade"] = float(new_grade)
+    return redirect(url_for("index"))
 
-
-# -------- Calculate GPA --------
-@app.route('/calculate_gpa')
+# ============= حساب المعدل التراكمي =============
+@app.route("/calculate_gpa", methods=["POST"])
 def calculate_gpa():
-    if len(subjects) == 0:
+    if not subjects:
         gpa = 0
     else:
         gpa = sum(sub["grade"] for sub in subjects) / len(subjects)
+    return render_template("index.html", student=student_info, subjects=subjects, gpa=gpa)
 
-    return render_template('index.html', student=student_info, subjects=subjects, gpa=round(gpa, 2))
-
-
-# -------- Generate PDF --------
-@app.route('/print_pdf')
+# ============= طباعة PDF =============
+@app.route("/print_pdf")
 def print_pdf():
-    if len(subjects) == 0:
-        return "⚠️ لا توجد مواد لحساب المعدل."
+    # احسب المعدل
+    gpa = sum(sub["grade"] for sub in subjects) / len(subjects) if subjects else 0
 
-    gpa = sum(sub["grade"] for sub in subjects) / len(subjects)
+    # جهز الـ HTML مع مسار الخط
+    rendered = render_template(
+        "report.html",
+        student=student_info,
+        subjects=subjects,
+        gpa=gpa,
+        font_path=os.path.join(basedir, "static/fonts/Amiri-Regular.ttf")
+    )
 
-    # Render the HTML Template
-    rendered = render_template('report.html',
-                               student_name=student_info["name"],
-                               student_id=student_info["id"],
-                               subjects=subjects,
-                               gpa=gpa,
-                               today=datetime.today().strftime('%Y-%m-%d'))
+    # أنشئ ملف PDF
+    pdf_path = os.path.join(basedir, "report.pdf")
+    with open(pdf_path, "w+b") as pdf_file:
+        pisa.CreatePDF(rendered, dest=pdf_file)
 
-    # Convert HTML to PDF
-    pdf_file = BytesIO()
-    pisa_status = pisa.CreatePDF(rendered, dest=pdf_file)
+    return send_file(pdf_path, as_attachment=True)
 
-    if pisa_status.err:
-        return "❌ Error generating PDF", 500
-
-    pdf_file.seek(0)
-    return send_file(pdf_file, download_name="gpa_report.pdf", as_attachment=True)
-
-
-# -------- Run the Flask App --------
-if __name__ == '__main__':
+# ================== تشغيل السيرفر ==================
+if __name__ == "__main__":
     app.run(debug=True)
